@@ -14,6 +14,9 @@ import discord
 from discord.ext import commands
 from pathlib import Path
 import re
+import sys
+import traceback
+from utils.portal import Portal
 
 source_path = Path(__file__).resolve()
 base_path = source_path.parents[1]
@@ -25,6 +28,12 @@ intents.messages = True
 class MyBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix=None, help_command=None, intents=intents)
+
+    async def setup_hook(self):
+        # Register cogs to handle commands
+        for cog_name in ["about", "reload"]:
+            await self.load_extension(f"cogs.{cog_name}")
+        await self.tree.sync()
 
 bot = MyBot()
 bot_config = Advanced_ConfigParser(Path.joinpath(base_path, "config", "bot.ini"))
@@ -40,6 +49,16 @@ else:
 @bot.event
 async def on_ready():
     app_logger.info(f"Successfully logged in (after {get_elapsed_time_smal(datetime.now().timestamp() - startup)}) as {bot.user}")
+
+@bot.tree.error
+async def on_app_command_error(ctx, error):
+    # Traceback für mehr Informationen zum Fehler
+    print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
+    traceback.print_exception(type(error), error, error.__traceback__)
+
+# Execute some housekeeping actions
+portal = Portal.instance()
+portal.bot_config = bot_config
 
 try:
     bot.run(bot_config["DISCORD"]["TOKEN"], log_handler = None)
