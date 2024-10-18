@@ -1,5 +1,5 @@
 name: Feature Request
-description: You found a bug or something does not work as it should, report it here
+description: You are missing an function or have a good idea? Suggest it here
 labels: ["feature-request"]
 body:
   - type: markdown
