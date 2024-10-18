@@ -1,0 +1,4 @@
+blank_issues_enabled: false
+  - name: General Issue
+    url: https://github.com/official-Cromatin/Commander/issues/new?assignees=&labels=&template=general_issue.yml
+    about: Nothing is matching your needs? Create an Normal issue
