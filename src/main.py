@@ -67,4 +67,5 @@ except discord.errors.LoginFailure:
     quit(1)
 
 app_logger.info("Quitting application ...")
+asyncio.run(bot.close())
 app_logger.info(f"Exiting. Application ran for {get_elapsed_time_big(datetime.now().timestamp() - startup)}")
