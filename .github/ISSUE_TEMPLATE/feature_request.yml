@@ -1,4 +1,4 @@
-name: Issue Report
+name: Feature Request
 description: You found a bug or something does not work as it should, report it here
 labels: ["feature-request"]
 body:
