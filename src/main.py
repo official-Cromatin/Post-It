@@ -1,3 +1,14 @@
+print("      ____  ____  ___________    __________")
+print("     / __ \/ __ \/ ___/_  __/   /  _/_  __/")
+print("    / /_/ / / / /\__ \ / /_____ / /  / /   ")
+print("   / ____/ /_/ /___/ // /_____// /  / /    ")
+print("  /_/    \____//____//_/     /___/ /_/     ")
+print("  Copyright (c) 2024 Lars Winzer")
+print()
+print("  Source: https://github.com/official-Cromatin/Post-It")
+print("  Report an Issue: https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=bug&projects=&template=issue_report.yml")
+print("\n")
+
 from datetime import datetime
 startup = datetime.now().timestamp()
 
