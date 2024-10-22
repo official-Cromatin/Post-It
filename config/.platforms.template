@@ -1,0 +1,5 @@
+; Create an script on the reddit developer page (https://www.reddit.com/prefs/apps)
+[REDDIT]
+CLIENT_ID = <PASTE YOUR CLIENT ID HERE>
+CLIENT_SECRET = <PASTE YOUR CLIENT SECRET HERE>
+USER_AGENT = Small discord bot to embed posts (given by url) into an standardized format
