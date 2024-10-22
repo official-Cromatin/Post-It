@@ -5,9 +5,8 @@ from pathlib import Path
 from shutil import copy
 
 class Advanced_ConfigParser(configparser.ConfigParser):
-    """Utility class to ease the use of the configparser libary
-    
-    Version 1.0"""
+    """Utility class to ease the use of the configparser libary"""
+    VERSION = "2.0"
     number_of_instances = 0
 
     def __init__(self, path:str, allow_template:bool = True) -> None:
