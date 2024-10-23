@@ -53,12 +53,12 @@ class MyBot(commands.Bot):
         await self.tree.sync()
 
     async def on_app_command_completion(self, interaction: discord.Interaction, command: Union[discord.app_commands.Command, discord.app_commands.ContextMenu]):
-        """Called when a `app_commands.Command` or `app_commands.ContextMenu` has successfully completed without error."""
+        """Called when a `app_commands.Command` or `app_commands.ContextMenu` has successfully completed without error"""
         self.__portal.no_succeeded_commands += 1
         print("Command succeeded")
 
     async def on_interaction(self, interaction: discord.Interaction):
-        """Called when an interaction happened."""
+        """Called when an interaction happened"""
         match interaction.type.name:
             case discord.InteractionType.application_command.name:
                 print("Interaction with bot", interaction.command.name)
@@ -72,6 +72,9 @@ class MyBot(commands.Bot):
             case discord.InteractionType.component.name:
                 print("Component interaction")
 
+    async def on_ready(self):
+        app_logger.info(f"Successfully logged in (after {get_elapsed_time_smal(datetime.now().timestamp() - startup)}) as {self.user}")
+
 bot = MyBot()
 bot_config = Advanced_ConfigParser(Path.joinpath(base_path, "config", "bot.ini"))
 if re.match(r'[A-Za-z\d]{24}\.[\w-]{6}\.[\w-]{27}', bot_config["DISCORD"]["TOKEN"]):
@@ -82,10 +85,6 @@ elif bot_config.compare_to_template() not in ("equal", "config_minus"):
     quit(1)
 else:
     app_logger.info("Bot configuration valid, continuing with startup")
-
-@bot.event
-async def on_ready():
-    app_logger.info(f"Successfully logged in (after {get_elapsed_time_smal(datetime.now().timestamp() - startup)}) as {bot.user}")
 
 # Execute some housekeeping actions
 portal = Portal.instance()
