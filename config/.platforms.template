@@ -3,3 +3,4 @@
 CLIENT_ID = <PASTE YOUR CLIENT ID HERE>
 CLIENT_SECRET = <PASTE YOUR CLIENT SECRET HERE>
 USER_AGENT = Small discord bot to embed posts (given by url) into an standardized format
+EMBED_COLOR = 0xff4500

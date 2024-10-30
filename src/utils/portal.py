@@ -4,7 +4,7 @@ from platforms.reddit import Reddit_Adapter
 
 @Singleton
 class Portal:
-    PROGRAM_VERSION = "0.2"
+    PROGRAM_VERSION = "0.3"
     bot_config:Advanced_ConfigParser = None
     platforms_config:Advanced_ConfigParser = None
     STARTUP_TIMESTAMP:float = None
