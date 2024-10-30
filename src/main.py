@@ -18,9 +18,10 @@ Custom_Logger.initialize()
 
 import logging
 app_logger = logging.getLogger("app")
+startup_logger = logging.getLogger("app.startup")
 
 from utils.adv_configparser import Advanced_ConfigParser
-from utils.datetime_tools import get_elapsed_time_smal, get_elapsed_time_big
+from utils.datetime_tools import get_elapsed_time_smal, get_elapsed_time_big, get_elapsed_time_milliseconds
 import discord
 from discord.ext import commands
 from pathlib import Path
@@ -30,6 +31,7 @@ import traceback
 from utils.portal import Portal
 import asyncio
 from typing import Union
+from platforms.reddit import Reddit_Adapter
 
 source_path = Path(__file__).resolve()
 base_path = source_path.parents[1]
@@ -42,6 +44,7 @@ class MyBot(commands.Bot):
     def __init__(self):
         super().__init__(command_prefix=None, help_command=None, intents=intents)
         self.__portal:Portal
+        self.__first_on_ready = False
 
     def set_portal(self, portal:Portal):
         self.__portal = portal
@@ -71,6 +74,35 @@ class MyBot(commands.Bot):
                 print("Modal interaction submitted")
             case discord.InteractionType.component.name:
                 print("Component interaction")
+
+    async def on_connect(self):
+        """A coroutine to be called to setup the bot, after the bot is logged in but before it has connected to the Websocket"""
+        if not self.__first_on_ready:
+            startup_logger.info(f"Beginning startup routine ...")
+            routine_begin = datetime.now().timestamp()
+            await self.change_presence(status = discord.Status.dnd, activity = discord.CustomActivity("Executing pre startup routine"))
+
+            # Create the adapters for the platforms
+            task_start = datetime.now().timestamp()
+            startup_logger.debug(f"Loading platforms config ...")
+            platforms_config = Advanced_ConfigParser(Path.joinpath(base_path, "config", "platforms.ini"))
+            portal.platforms_config = platforms_config
+            startup_logger.info(f"Loaded platforms config after {get_elapsed_time_milliseconds(datetime.now().timestamp() - task_start)}")
+
+            # Create platforms adapter
+            task_start = datetime.now().timestamp()
+            startup_logger.debug(f"Creating reddit adapter ...")
+            portal.reddit_adapter = Reddit_Adapter(platforms_config["REDDIT"]["CLIENT_ID"], platforms_config["REDDIT"]["CLIENT_SECRET"])
+            startup_logger.info(f"Created reddit adapter after {get_elapsed_time_milliseconds(datetime.now().timestamp() - task_start)}")
+
+            await asyncio.sleep(15)
+
+            await self.change_presence(status = discord.Status.online, activity = None)
+            startup_logger.info(f"Startup routine finished after {get_elapsed_time_milliseconds(datetime.now().timestamp() - routine_begin)}")
+
+            self.__first_on_ready = True
+        else:
+            startup_logger.info("Startup routine allready executed, omitting this execution")
 
     async def on_ready(self):
         app_logger.info(f"Successfully logged in (after {get_elapsed_time_smal(datetime.now().timestamp() - startup)}) as {self.user}")
