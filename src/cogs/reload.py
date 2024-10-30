@@ -2,6 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from cogs.base_cog import Base_Cog
+from cogs.maintenance import Maintenance_Command
+
 import logging
 from datetime import datetime
 from utils.datetime_tools import get_elapsed_time_milliseconds
@@ -36,6 +38,7 @@ class Reload_Command(Base_Cog):
         return choices
 
     @app_commands.command(name = "reload_all", description = "Reloads all cogs")
+    @app_commands.check(Maintenance_Command.handle_check)
     async def reload_all(self, ctx: discord.Interaction):
         task_start = datetime.now().timestamp()
         cog_names = list(self.__bot.extensions.keys())
@@ -69,6 +72,7 @@ class Reload_Command(Base_Cog):
             await ctx.response.send_message(embed = embed, ephemeral = True)
 
     @app_commands.command(name = "reload", description = "Reload specific cog")
+    @app_commands.check(Maintenance_Command.handle_check)
     @app_commands.autocomplete(cog_name = autocomplete_cog)
     async def reload(self, ctx: discord.Interaction, cog_name:str):
         task_start = datetime.now().timestamp()

@@ -15,6 +15,7 @@ class Post_Command(Base_Cog):
         super().__init__(logging.getLogger("cmds.post"))
 
     @app_commands.command(name = "post", description = "Post an embed in the Current Channel with a link to the content")
+    @app_commands.check(Maintenance_Command.handle_check)
     async def post(self, ctx:discord.Interaction, url:str):
         domain_info = urlparse(url)
         portal = Portal.instance()

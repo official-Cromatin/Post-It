@@ -2,6 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from cogs.base_cog import Base_Cog
+from cogs.maintenance import Maintenance_Command
+
 import logging
 from utils.portal import Portal
 
@@ -11,6 +13,7 @@ class About_Command(Base_Cog):
         super().__init__(logging.getLogger("cmds.about"))
 
     @app_commands.command(name = "about", description = "Provides general information about the bot")
+    @app_commands.check(Maintenance_Command.handle_check)
     async def about(self, ctx: discord.Interaction):
         portal:Portal = Portal.instance()
         embed = discord.Embed(title=f"POST IT - `{portal.PROGRAM_VERSION}`",
@@ -28,18 +31,3 @@ class About_Command(Base_Cog):
 
 async def setup(bot:commands.Bot):
     await bot.add_cog(About_Command(bot))
-
-# class AddCog(commands.Cog):
-#     def __init__(self, bot):
-#         self.bot = bot
-
-#     @app_commands.command(name="add", description="Füge ein neues Wort zur Liste hinzu")
-#     async def add(self, interaction: discord.Interaction, new_word: str):
-#         if new_word.lower() not in self.bot.known_words:
-#             self.bot.known_words.append(new_word.lower())
-#             await interaction.response.send_message(f"Wort '{new_word}' wurde zur Liste hinzugefügt.")
-#         else:
-#             await interaction.response.send_message(f"Wort '{new_word}' existiert bereits.")
-
-# async def setup(bot):
-#     await bot.add_cog(AddCog(bot))
