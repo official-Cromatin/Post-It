@@ -32,7 +32,6 @@ from utils.portal import Portal
 import asyncio
 from typing import Union
 from platforms.reddit import Reddit_Adapter
-from cogs.maintenance import Maintenance_Command
 
 source_path = Path(__file__).resolve()
 base_path = source_path.parents[1]
@@ -52,7 +51,7 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self):
         # Register cogs to handle commands
-        for cog_name in ["maintenance", "about", "debug", "reload", "post"]:
+        for cog_name in ["about", "debug", "reload", "post"]:
             await self.load_extension(f"cogs.{cog_name}")
         await self.tree.sync()
 
@@ -79,8 +78,6 @@ class MyBot(commands.Bot):
     async def on_connect(self):
         """A coroutine to be called to setup the bot, after the bot is logged in but before it has connected to the Websocket"""
         if not self.__first_on_ready:
-            instance: Maintenance_Command = self.get_cog("Maintenance_Command")
-            instance.enable_global_maintenance()
             startup_logger.info(f"Beginning startup routine ...")
             routine_begin = datetime.now().timestamp()
             await self.change_presence(status = discord.Status.dnd, activity = discord.CustomActivity("Executing pre startup routine"))
@@ -100,8 +97,6 @@ class MyBot(commands.Bot):
 
             await self.change_presence(status = discord.Status.online, activity = None)
             startup_logger.info(f"Startup routine finished after {get_elapsed_time_milliseconds(datetime.now().timestamp() - routine_begin)}")
-
-            instance.disable_gloabal_maintenance()
             self.__first_on_ready = True
         else:
             startup_logger.info("Startup routine allready executed, omitting this execution")
