@@ -25,11 +25,10 @@ class Post_Command(Base_Cog):
         toplevel_domain = '.'.join(domain_info.netloc.split('.')[-2:])
         match toplevel_domain:
             case "reddit.com":
-                await ctx.response.defer()
+                self._logger.debug(f"Recieved command by {ctx.user} ({ctx.user.id}) for reddit ({url})")
+                begin_process = datetime.now().timestamp()
 
                 subm:Submission = portal.reddit_adapter.fetch(url)
-                embeds = []
-
                 image_urls = []
                 # Check if submission has a gallery
                 if hasattr(subm, "media_metadata"):
@@ -38,7 +37,13 @@ class Post_Command(Base_Cog):
                         image_urls.append(f"https://i.redd.it/{media_id}.{file_extension}")
                 else:
                     image_urls.append(subm.url)
-                self._logger.debug(f"Found {len(image_urls)} image urls for the post")
+                image_count = len(image_urls)
+                loaded_count = 0
+                self._logger.debug(f"Found {image_count} image urls for the post")
+
+                progress_title = f"`{image_count}` images are going to be converted, it may take a while."
+                progress_temp = progress_title + f"\n`0` of `{image_count}` have already been loaded"
+                await ctx.response.send_message(progress_temp, ephemeral = True)
 
                 # Download and convert each image
                 image_files:list[discord.File] = []
@@ -56,8 +61,10 @@ class Post_Command(Base_Cog):
                         webp_buffer.seek(0)
                         image_file = discord.File(webp_buffer, filename = f"image_{index}.webp")
                         image_files.append(image_file)
-
                         index += 1
+
+                        progress_temp = progress_title + f"\n`{index}` of `{image_count}` have already been loaded"
+                        await ctx.edit_original_response(content = progress_temp)
                     
                 self._logger.debug(f"Downloaded and converted {len(image_files)} images in {get_elapsed_time_milliseconds(datetime.now().timestamp() - begin_conversion)}")
                 
@@ -66,11 +73,14 @@ class Post_Command(Base_Cog):
                 if custom_note:
                     content += f"\n> {custom_note}"
                 
-                await ctx.followup.send(
+                await ctx.delete_original_response()
+                message = await ctx.followup.send(
                     content = content,
                     suppress_embeds = True,
                     files = image_files
                 )
+
+                self._logger.info(f"Successfully processed the command executed by {ctx.user.name} ({ctx.user.id}) after {get_elapsed_time_milliseconds(datetime.now().timestamp() - begin_process)} (ID of message: {message.id})")
 
                 # embed = discord.Embed(url = "https://discord.com/humans.txt", color = int(portal.platforms_config["REDDIT"]["embed_color"], 16))
                 # embed.set_author(name = subm.title)
@@ -97,12 +107,15 @@ class Post_Command(Base_Cog):
             
             # No domain for seperation found
             case _:
+                if toplevel_domain == "":
+                    toplevel_domain = "not_found"
+                    
                 embed = discord.Embed(
                     title = "Domain not found",
-                    description = f"The requested domain `{toplevel_domain}` is currently not supported\nOpen [an issue](https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=feature-request&projects=&template=feature_request.yml) to request support for it.\n\nSee an list of supported platforms with the `/platforms` command",
+                    description = f"The requested domain `{toplevel_domain}` is currently not supported\nOpen [an issue](https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=feature-request&projects=&template=feature_request.yml) to request support for it.\n\nCurrently supported plattforms:\n- Reddit",
                     color = 0xED4337)
 
-                await ctx.response.send_message(embed = embed)
+                await ctx.response.send_message(embed = embed, ephemeral = True)
 
 
 async def setup(bot:commands.Bot):
