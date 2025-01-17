@@ -51,7 +51,7 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self):
         # Register cogs to handle commands
-        for cog_name in ["about", "debug", "reload", "post"]:
+        for cog_name in ["debug", "post"]:
             await self.load_extension(f"cogs.{cog_name}")
         await self.tree.sync()
 
