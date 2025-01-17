@@ -2,7 +2,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from cogs.base_cog import Base_Cog
-from cogs.maintenance import Maintenance_Command
 
 import logging
 from utils.portal import Portal
@@ -16,7 +15,6 @@ class Debug_Command(Base_Cog):
         super().__init__(logging.getLogger("cmds.debug"))
 
     @app_commands.command(name = "debug", description = "Provides debug informations about the bot, useful for troubleshooting")
-    @app_commands.check(Maintenance_Command.handle_check)
     @log_command_execution
     async def debug(self, ctx:discord.Interaction):
         portal:Portal = Portal.instance()

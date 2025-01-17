@@ -2,7 +2,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from cogs.base_cog import Base_Cog
-from cogs.maintenance import Maintenance_Command
 
 import logging
 from utils.portal import Portal

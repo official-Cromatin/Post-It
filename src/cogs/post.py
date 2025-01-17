@@ -2,7 +2,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from cogs.base_cog import Base_Cog
-from cogs.maintenance import Maintenance_Command
 
 import logging
 from urllib.parse import urlparse
@@ -20,7 +19,6 @@ class Post_Command(Base_Cog):
         super().__init__(logging.getLogger("cmds.post"))
 
     @app_commands.command(name = "post", description = "Post an embed in the Current Channel with a link to the content")
-    @app_commands.check(Maintenance_Command.handle_check)
     async def post(self, ctx:discord.Interaction, url:str, custom_note:str = None):
         domain_info = urlparse(url)
         portal = Portal.instance()
