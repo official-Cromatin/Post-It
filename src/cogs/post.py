@@ -19,103 +19,112 @@ class Post_Command(Base_Cog):
         super().__init__(logging.getLogger("cmds.post"))
 
     @app_commands.command(name = "post", description = "Post an embed in the Current Channel with a link to the content")
-    async def post(self, ctx:discord.Interaction, url:str, custom_note:str = None):
-        domain_info = urlparse(url)
-        portal = Portal.instance()
-        toplevel_domain = '.'.join(domain_info.netloc.split('.')[-2:])
-        match toplevel_domain:
-            case "reddit.com":
-                self._logger.debug(f"Recieved command by {ctx.user} ({ctx.user.id}) for reddit ({url})")
-                begin_process = datetime.now().timestamp()
+    @app_commands.describe(url = "URL to the post", custom_note = "Describe the post with your own note", use_title = "Display the title of the post", quality = "Specifies the quality of the converted image, closer to 100 is better")
+    @app_commands.choices(quality = [
+        app_commands.Choice(name = "Poor (60)", value = 60),
+        app_commands.Choice(name = "Fair (70)", value = 70),
+        app_commands.Choice(name = "Good (80)", value = 80),
+        app_commands.Choice(name = "Very Good (85)", value = 85),
+        app_commands.Choice(name = "Excellent (90)", value = 90),
+        app_commands.Choice(name = "Superior (95)", value = 95),
+        app_commands.Choice(name = "Perfect (100)", value = 100)
+    ])
+    async def post(self, ctx:discord.Interaction, url:str, custom_note:str = None, use_title:bool = True, quality:app_commands.Choice[int] = 95):
+        try:
+            domain_info = urlparse(url)
+            portal = Portal.instance()
+            toplevel_domain = '.'.join(domain_info.netloc.split('.')[-2:])
+            match toplevel_domain:
+                case "reddit.com":
+                    self._logger.debug(f"Recieved command by {ctx.user} ({ctx.user.id}) for reddit ({url})")
+                    begin_process = datetime.now().timestamp()
 
-                subm:Submission = portal.reddit_adapter.fetch(url)
-                image_urls = []
-                # Check if submission has a gallery
-                if hasattr(subm, "media_metadata"):
-                    for media_id, media in subm.media_metadata.items():
-                        file_extension = media["m"].split("/")[1]
-                        image_urls.append(f"https://i.redd.it/{media_id}.{file_extension}")
-                else:
-                    image_urls.append(subm.url)
-                image_count = len(image_urls)
-                loaded_count = 0
-                self._logger.debug(f"Found {image_count} image urls for the post")
+                    subm:Submission = portal.reddit_adapter.fetch(url)
+                    image_urls = []
+                    # Check if submission has a gallery
+                    if hasattr(subm, "media_metadata"):
+                        for media_id, media in subm.media_metadata.items():
+                            file_extension = media["m"].split("/")[1]
+                            image_urls.append(f"https://i.redd.it/{media_id}.{file_extension}")
+                    else:
+                        image_urls.append(subm.url)
+                    image_count = len(image_urls)
+                    loaded_count = 0
+                    self._logger.debug(f"Found {image_count} image urls for the post")
 
-                progress_title = f"`{image_count}` images are going to be converted, it may take a while."
-                progress_temp = progress_title + f"\n`0` of `{image_count}` have already been loaded"
-                await ctx.response.send_message(progress_temp, ephemeral = True)
+                    progress_title = f"`{image_count}` images are going to be converted, it may take a while."
+                    progress_temp = progress_title + f"\n`0` of `{image_count}` have already been loaded"
+                    await ctx.response.send_message(progress_temp, ephemeral = True)
 
-                # Download and convert each image
-                image_files:list[discord.File] = []
-                begin_conversion = datetime.now().timestamp()
-                async with aiohttp.ClientSession() as session:
-                    index = 0
-                    for image_url in image_urls:
-                        async with session.get(image_url) as response:
-                            response.raise_for_status()  # Fehlerbehandlung für HTTP-Status
-                            image_data = await response.read()  # Bilddaten im RAM laden
+                    if isinstance(quality, app_commands.Choice):
+                        quality_value = quality.value
+                    else:
+                        quality_value = quality
 
-                        original_image = Image.open(BytesIO(image_data))  # Originalbild laden
-                        webp_buffer = BytesIO()  # Puffer für WebP-Bild
-                        original_image.save(webp_buffer, format="WEBP", lossless=True)  # WebP speichern
-                        webp_buffer.seek(0)
-                        image_file = discord.File(webp_buffer, filename = f"image_{index}.webp")
-                        image_files.append(image_file)
-                        index += 1
+                    # Download and convert each image
+                    image_files:list[discord.File] = []
+                    begin_conversion = datetime.now().timestamp()
+                    async with aiohttp.ClientSession() as session:
+                        index = 0
+                        for image_url in image_urls:
+                            async with session.get(image_url) as response:
+                                response.raise_for_status()
+                                image_data = await response.read()
 
-                        progress_temp = progress_title + f"\n`{index}` of `{image_count}` have already been loaded"
-                        await ctx.edit_original_response(content = progress_temp)
+                            original_image = Image.open(BytesIO(image_data))
+                            webp_buffer = BytesIO()
+                            original_image.save(webp_buffer, format = "WEBP", quality = quality_value)
+                            webp_buffer.seek(0)
+                            image_file = discord.File(webp_buffer, filename = f"image_{index}.webp")
+                            image_files.append(image_file)
+                            index += 1
+
+                            progress_temp = progress_title + f"\n`{index}` of `{image_count}` have already been loaded"
+                            await ctx.edit_original_response(content = progress_temp)
+                        
+                    self._logger.debug(f"Downloaded and converted {len(image_files)} images in {get_elapsed_time_milliseconds(datetime.now().timestamp() - begin_conversion)}")
                     
-                self._logger.debug(f"Downloaded and converted {len(image_files)} images in {get_elapsed_time_milliseconds(datetime.now().timestamp() - begin_conversion)}")
-                
-                author = subm.author.name if subm.author else "Author not found"
-                content = f":copyright: [{author}]({url})"
-                if custom_note:
-                    content += f"\n> {custom_note}"
-                
-                await ctx.delete_original_response()
-                message = await ctx.followup.send(
-                    content = content,
-                    suppress_embeds = True,
-                    files = image_files
-                )
+                    author = subm.author.name if subm.author else "Author not found"
+                    content = f":copyright: [{author}]({url})"
+                    if use_title:
+                        content += f"\n# {subm.title}"
 
-                self._logger.info(f"Successfully processed the command executed by {ctx.user.name} ({ctx.user.id}) after {get_elapsed_time_milliseconds(datetime.now().timestamp() - begin_process)} (ID of message: {message.id})")
-
-                # embed = discord.Embed(url = "https://discord.com/humans.txt", color = int(portal.platforms_config["REDDIT"]["embed_color"], 16))
-                # embed.set_author(name = subm.title)
-                # embeds.append(embed)
-
-                # embed.add_field(
-                #     name = "Author",
-                #     value = f"[u/{subm.author}](https://www.reddit.com/user/{subm.author})",
-                #     inline = True)
-                # embed.add_field(
-                #     name = "Subreddit",
-                #     value = f"[r/{subm.subreddit.display_name}]({url})",
-                #     inline = True)
-                # if subm.selftext:
-                #     embed.add_field(
-                #         name = "Discription",
-                #         value = subm.selftext,
-                #         inline = False)
-                
-                # for image_url in image_urls:
-                #     embed = discord.Embed(url = "https://discord.com/humans.txt")
-                #     embed.set_image(url = image_url)
-                #     embeds.append(embed)
-            
-            # No domain for seperation found
-            case _:
-                if toplevel_domain == "":
-                    toplevel_domain = "not_found"
+                    if custom_note:
+                        content += f"\n> {custom_note}"
                     
+                    await ctx.delete_original_response()
+                    message = await ctx.followup.send(
+                        content = content,
+                        suppress_embeds = True,
+                        files = image_files
+                    )
+
+                    self._logger.info(f"Successfully processed the command executed by {ctx.user.name} ({ctx.user.id}) after {get_elapsed_time_milliseconds(datetime.now().timestamp() - begin_process)} (ID of message: {message.id})")
+                
+                # No domain for seperation found
+                case _:
+                    if toplevel_domain == "":
+                        toplevel_domain = "not_found"
+                        
+                    embed = discord.Embed(
+                        title = "Domain not found",
+                        description = f"The requested domain `{toplevel_domain}` is currently not supported\nOpen [an issue](https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=feature-request&projects=&template=feature_request.yml) to request support for it.\n\nCurrently supported plattforms:\n- Reddit",
+                        color = 0xED4337)
+
+                    await ctx.response.send_message(embed = embed, ephemeral = True)
+        except Exception as error:
+            self._logger.error(f"Could not complete command by {ctx.user.name} ({ctx.user.id})")
+            self._logger.exception(error, stack_info = True)
+
+            await ctx.delete_original_response()
+            await ctx.followup.send(
                 embed = discord.Embed(
-                    title = "Domain not found",
-                    description = f"The requested domain `{toplevel_domain}` is currently not supported\nOpen [an issue](https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=feature-request&projects=&template=feature_request.yml) to request support for it.\n\nCurrently supported plattforms:\n- Reddit",
-                    color = 0xED4337)
-
-                await ctx.response.send_message(embed = embed, ephemeral = True)
+                    title = "Error while processing",
+                    description = f"While we processed your request, the following exception occured: `{error}`",
+                    color = 0xED4337
+                ),
+                ephemeral = True
+            )
 
 
 async def setup(bot:commands.Bot):
