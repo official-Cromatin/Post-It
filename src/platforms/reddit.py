@@ -1,13 +1,12 @@
-import praw
-import praw.models
+import asyncpraw
+import asyncpraw.models
 import logging
 from utils.event_counter import Event_Counter
 from utils.datetime_tools import get_elapsed_time_milliseconds
-from typing import Union
 from datetime import datetime
 
-class Reddit_Adapter(praw.Reddit):
-    """A class that extends and abstracts the functionality of the `praw.Reddit` class by adding 
+class Reddit_Adapter(asyncpraw.Reddit):
+    """A class that extends and abstracts the functionality of the `asyncpraw.Reddit` class by adding 
     logging and request tracking capabilities."""
     VERSION = "1.0"
     number_of_instances = 0
@@ -25,11 +24,11 @@ class Reddit_Adapter(praw.Reddit):
         self.__events = Event_Counter(1000)
         self.__logger = logging.getLogger(f"pltfm.reddit.{self.__instance_number}")
 
-    def fetch(self, post_url:str) -> praw.models.Submission:
+    async def fetch(self, post_url:str) -> asyncpraw.models.Submission:
         """Fetches specified submission (post) and returns it"""
         start_time = datetime.now().timestamp()
         self.__events.increment()
-        subm = self.submission(url = post_url)
+        subm = await self.submission(url = post_url)
         self.__logger.debug(f"Submission for post (URL: {post_url}), successfully fetched after {get_elapsed_time_milliseconds(datetime.now().timestamp() - start_time)}")
         return subm
     
