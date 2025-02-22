@@ -13,6 +13,9 @@ from io import BytesIO
 from datetime import datetime
 from utils.datetime_tools import get_elapsed_time_milliseconds
 
+class NoMediaFound(Exception): 
+    pass
+
 class Post_Command(Base_Cog):
     def __init__(self, bot:commands.Bot):
         self.__bot = bot
@@ -34,22 +37,25 @@ class Post_Command(Base_Cog):
             domain_info = urlparse(url)
             portal = Portal.instance()
             toplevel_domain = '.'.join(domain_info.netloc.split('.')[-2:])
+            begin_process = datetime.now().timestamp()
             match toplevel_domain:
                 case "reddit.com":
                     self._logger.debug(f"Recieved command by {ctx.user} ({ctx.user.id}) for reddit ({url})")
-                    begin_process = datetime.now().timestamp()
 
-                    subm:Submission = portal.reddit_adapter.fetch(url)
+                    subm:Submission = await portal.reddit_adapter.fetch(url)
                     image_urls = []
                     # Check if submission has a gallery
                     if hasattr(subm, "media_metadata"):
                         for media_id, media in subm.media_metadata.items():
                             file_extension = media["m"].split("/")[1]
+                            if file_extension not in ("jpg", "jpeg", "png", "webp", "heic", "heif"):
+                                continue
                             image_urls.append(f"https://i.redd.it/{media_id}.{file_extension}")
                     else:
                         image_urls.append(subm.url)
                     image_count = len(image_urls)
-                    loaded_count = 0
+                    if image_count == 0:
+                        raise NoMediaFound
                     self._logger.debug(f"Found {image_count} image urls for the post")
 
                     progress_title = f"`{image_count}` images are going to be converted, it may take a while."
@@ -87,7 +93,7 @@ class Post_Command(Base_Cog):
                     author = subm.author.name if subm.author else "Author not found"
                     content = f":copyright: [{author}]({url})"
                     if use_title:
-                        content += f"\n# {subm.title}"
+                        content += f"\n## {subm.title}"
 
                     if custom_note:
                         content += f"\n> {custom_note}"
@@ -112,19 +118,39 @@ class Post_Command(Base_Cog):
                         color = 0xED4337)
 
                     await ctx.response.send_message(embed = embed, ephemeral = True)
+
+        except NoMediaFound:
+            self._logger.error(f"Aborted issued command by {ctx.user.name} ({ctx.user.id}). Post had no media attatched")
+
+            # Delete the original response, if existing
+            try:
+                await ctx.delete_original_response()
+            except discord.NotFound:
+                pass
+            embed = discord.Embed(
+                title = "No media found",
+                description = "The post had no media attatched, or was in an unsupported format\nVideos are not supported! (yet)",
+                color = 0xED4337
+            )
+            embed.set_footer(text = "Supported image formats: jpg, jpeg, png, webp, heic, heif")
+
         except Exception as error:
             self._logger.error(f"Could not complete command by {ctx.user.name} ({ctx.user.id})")
             self._logger.exception(error, stack_info = True)
 
-            await ctx.delete_original_response()
-            await ctx.followup.send(
-                embed = discord.Embed(
-                    title = "Error while processing",
-                    description = f"While we processed your request, the following exception occured: `{error}`",
-                    color = 0xED4337
-                ),
-                ephemeral = True
+            # Delete the original response, if existing
+            try:
+                await ctx.delete_original_response()
+            except discord.NotFound:
+                pass
+
+            # Explain to the user what the error was
+            embed = discord.Embed(
+                title = "Error while processing",
+                description = f"While we processed your request, the following exception occured: `{error}`",
+                color = 0xED4337
             )
+            await ctx.followup.send(embed = embed, ephemeral = True)
 
 
 async def setup(bot:commands.Bot):
