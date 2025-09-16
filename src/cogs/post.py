@@ -5,7 +5,7 @@ from cogs.base_cog import Base_Cog
 
 import logging
 from urllib.parse import urlparse
-from praw.models import Submission, Subreddit
+from asyncpraw.models import Submission
 from utils.portal import Portal
 import aiohttp
 from PIL import Image
@@ -93,7 +93,7 @@ class Post_Command(Base_Cog):
                     author = subm.author.name if subm.author else "Author not found"
                     content = f":copyright: [{author}]({url})"
                     if use_title:
-                        content += f"\n## {subm.title}"
+                        content += f"\n# {subm.title}"
 
                     if custom_note:
                         content += f"\n> {custom_note}"
@@ -134,6 +134,25 @@ class Post_Command(Base_Cog):
             )
             embed.set_footer(text = "Supported image formats: jpg, jpeg, png, webp, heic, heif")
 
+        except discord.errors.HTTPException as error:
+            self._logger.error(f"Could not complete command by {ctx.user.name} ({ctx.user.id})")
+            self._logger.exception(error, stack_info = True)
+
+            match error.code:
+                case 40005:
+                    self._logger.error("Failed to upload images, payload too large")
+
+                    embed = discord.Embed(
+                        title = "Error while processing",
+                        description = "The attachments exceed the upload limit of Discord,\nchoose a different quality level via the argument `quality`",
+                        color = 0xED4337
+                    )
+
+                    if ctx.response.is_done():
+                        await ctx.followup.send(embed = embed, ephemeral = True)
+                    else:
+                        await ctx.response.send_message(embed = embed)
+
         except Exception as error:
             self._logger.error(f"Could not complete command by {ctx.user.name} ({ctx.user.id})")
             self._logger.exception(error, stack_info = True)
@@ -150,7 +169,10 @@ class Post_Command(Base_Cog):
                 description = f"While we processed your request, the following exception occured: `{error}`",
                 color = 0xED4337
             )
-            await ctx.followup.send(embed = embed, ephemeral = True)
+            if ctx.response.is_done():
+                await ctx.followup.send(embed = embed, ephemeral = True)
+            else:
+                await ctx.response.send_message(embed = embed)
 
 
 async def setup(bot:commands.Bot):
