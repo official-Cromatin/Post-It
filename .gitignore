@@ -4,7 +4,6 @@ config/*.ini
 pastebin.txt
 .DS_Store
 test*.py
-.dockerignore
 docker-*
 .vscode
 
