@@ -1,25 +1,6 @@
-print("      ____  ____  ___________    __________")
-print("     / __ \/ __ \/ ___/_  __/   /  _/_  __/")
-print("    / /_/ / / / /\__ \ / /_____ / /  / /   ")
-print("   / ____/ /_/ /___/ // /_____// /  / /    ")
-print("  /_/    \____//____//_/     /___/ /_/     ")
-print("  Copyright (c) 2024 Lars Winzer")
-print()
-print("  Source: https://github.com/official-Cromatin/Post-It")
-print("  Report an Issue: https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=bug&projects=&template=issue_report.yml")
-print("\n")
-
 from datetime import datetime
-startup = datetime.now().timestamp()
-
-# Initialize the logger
 from utils.logger.custom_logging import Custom_Logger
-Custom_Logger.initialize()
-
 import logging
-app_logger = logging.getLogger("app")
-startup_logger = logging.getLogger("app.startup")
-
 from utils.adv_configparser import Advanced_ConfigParser
 from utils.datetime_tools import get_elapsed_time_smal, get_elapsed_time_big, get_elapsed_time_milliseconds
 import discord
@@ -32,7 +13,23 @@ from utils.portal import Portal
 import asyncio
 from typing import Union
 from platforms.reddit import Reddit_Adapter
-from cogs.maintenance import Maintenance_Command
+
+print("      ____  ____  ___________    __________")
+print("     / __ \/ __ \/ ___/_  __/   /  _/_  __/")
+print("    / /_/ / / / /\__ \ / /_____ / /  / /   ")
+print("   / ____/ /_/ /___/ // /_____// /  / /    ")
+print("  /_/    \____//____//_/     /___/ /_/     ")
+print("  Copyright (c) 2024-2025 Lars Winzer")
+print()
+print("  Source: https://github.com/official-Cromatin/Post-It")
+print("  Report an Issue: https://github.com/official-Cromatin/Post-It/issues/new?assignees=&labels=bug&projects=&template=issue_report.yml")
+print("\n")
+startup = datetime.now().timestamp()
+
+# Initialize the logger
+Custom_Logger.initialize()
+app_logger = logging.getLogger("app")
+startup_logger = logging.getLogger("app.startup")
 
 source_path = Path(__file__).resolve()
 base_path = source_path.parents[1]
@@ -52,20 +49,18 @@ class MyBot(commands.Bot):
 
     async def setup_hook(self):
         # Register cogs to handle commands
-        for cog_name in ["maintenance", "about", "debug", "reload", "post"]:
+        for cog_name in ["debug", "post"]:
             await self.load_extension(f"cogs.{cog_name}")
         await self.tree.sync()
 
     async def on_app_command_completion(self, interaction: discord.Interaction, command: Union[discord.app_commands.Command, discord.app_commands.ContextMenu]):
         """Called when a `app_commands.Command` or `app_commands.ContextMenu` has successfully completed without error"""
         self.__portal.no_succeeded_commands += 1
-        print("Command succeeded")
 
     async def on_interaction(self, interaction: discord.Interaction):
         """Called when an interaction happened"""
         match interaction.type.name:
             case discord.InteractionType.application_command.name:
-                print("Interaction with bot", interaction.command.name)
                 self.__portal.no_executed_commands += 1
             case discord.InteractionType.ping.name:
                 print("App got pinged by discord")
@@ -79,29 +74,25 @@ class MyBot(commands.Bot):
     async def on_connect(self):
         """A coroutine to be called to setup the bot, after the bot is logged in but before it has connected to the Websocket"""
         if not self.__first_on_ready:
-            instance: Maintenance_Command = self.get_cog("Maintenance_Command")
-            instance.enable_global_maintenance()
-            startup_logger.info(f"Beginning startup routine ...")
+            startup_logger.info("Beginning startup routine ...")
             routine_begin = datetime.now().timestamp()
             await self.change_presence(status = discord.Status.dnd, activity = discord.CustomActivity("Executing pre startup routine"))
 
             # Create the adapters for the platforms
             task_start = datetime.now().timestamp()
-            startup_logger.debug(f"Loading platforms config ...")
+            startup_logger.debug("Loading platforms config ...")
             platforms_config = Advanced_ConfigParser(Path.joinpath(base_path, "config", "platforms.ini"))
             portal.platforms_config = platforms_config
             startup_logger.info(f"Loaded platforms config after {get_elapsed_time_milliseconds(datetime.now().timestamp() - task_start)}")
 
             # Create platforms adapter
             task_start = datetime.now().timestamp()
-            startup_logger.debug(f"Creating reddit adapter ...")
+            startup_logger.debug("Creating reddit adapter ...")
             portal.reddit_adapter = Reddit_Adapter(platforms_config["REDDIT"]["CLIENT_ID"], platforms_config["REDDIT"]["CLIENT_SECRET"])
             startup_logger.info(f"Created reddit adapter after {get_elapsed_time_milliseconds(datetime.now().timestamp() - task_start)}")
 
             await self.change_presence(status = discord.Status.online, activity = None)
             startup_logger.info(f"Startup routine finished after {get_elapsed_time_milliseconds(datetime.now().timestamp() - routine_begin)}")
-
-            instance.disable_gloabal_maintenance()
             self.__first_on_ready = True
         else:
             startup_logger.info("Startup routine allready executed, omitting this execution")
