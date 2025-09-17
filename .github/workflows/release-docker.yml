@@ -26,6 +26,7 @@ jobs:
 
       - name: Transform 'github.repository' to lowercase
         id: lowercase_repo
+        shell: bash
         run: echo "repository=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
       - name: Build and push multi-arch image
