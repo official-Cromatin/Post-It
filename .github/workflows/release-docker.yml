@@ -4,6 +4,10 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push-docker:
     runs-on: self-hosted
@@ -24,6 +28,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Transform 'github.repository' to lowercase
+        id: lowercase_repo
+        shell: bash
+        run: echo "repository=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v5
         with:
@@ -31,5 +40,5 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.event.release.tag_name }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ steps.lowercase_repo.outputs.repository }}:${{ github.event.release.tag_name }}
+            ghcr.io/${{ steps.lowercase_repo.outputs.repository }}:latest
