@@ -13,12 +13,13 @@ from utils.portal import Portal
 import asyncio
 from typing import Union
 from platforms.reddit import Reddit_Adapter
+from const import VERSION
 
 print("      ____  ____  ___________    __________")
 print("     / __ \/ __ \/ ___/_  __/   /  _/_  __/")
 print("    / /_/ / / / /\__ \ / /_____ / /  / /   ")
 print("   / ____/ /_/ /___/ // /_____// /  / /    ")
-print("  /_/    \____//____//_/     /___/ /_/     ")
+print(f"  /_/    \____//____//_/     /___/ /_/ v{VERSION}")
 print("  Copyright (c) 2024-2025 Lars Winzer")
 print()
 print("  Source: https://github.com/official-Cromatin/Post-It")
@@ -43,6 +44,8 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix=None, help_command=None, intents=intents)
         self.__portal:Portal
         self.__first_on_ready = False
+
+        self.VERSION = VERSION
 
     def set_portal(self, portal:Portal):
         self.__portal = portal

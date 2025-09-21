@@ -21,7 +21,7 @@ class Debug_Command(Base_Cog):
         embed = discord.Embed(title="Debug Information")
 
         embed.add_field(name="Version",
-                        value=f"`{portal.PROGRAM_VERSION}`",
+                        value=ctx.client.VERSION,
                         inline=True)
         embed.add_field(name="Uptime",
                         value=f"{get_elapsed_time_big(datetime.now().timestamp() - portal.STARTUP_TIMESTAMP)}",
