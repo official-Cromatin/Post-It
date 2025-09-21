@@ -1,0 +1,24 @@
+name: Renovate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  renovate:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Self-Hosted Renovate
+        uses: renovatebot/github-action@v43.0.12
+        with:
+          docker-cmd-file: .github/renovate-entrypoint.sh
+          docker-user: root
+          token: ${{ secrets.GITHUB_TOKEN }}
