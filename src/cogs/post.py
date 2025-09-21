@@ -6,7 +6,6 @@ from cogs.base_cog import Base_Cog
 import logging
 from urllib.parse import urlparse
 from asyncpraw.models import Submission
-from utils.portal import Portal
 import aiohttp
 from PIL import Image
 from io import BytesIO
@@ -35,14 +34,12 @@ class Post_Command(Base_Cog):
     async def post(self, ctx:discord.Interaction, url:str, custom_note:str = None, use_title:bool = True, quality:app_commands.Choice[int] = 95):
         try:
             domain_info = urlparse(url)
-            portal = Portal.instance()
             toplevel_domain = '.'.join(domain_info.netloc.split('.')[-2:])
             begin_process = datetime.now().timestamp()
             match toplevel_domain:
                 case "reddit.com":
                     self._logger.debug(f"Recieved command by {ctx.user} ({ctx.user.id}) for reddit ({url})")
-
-                    subm:Submission = await portal.reddit_adapter.fetch(url)
+                    subm:Submission = await ctx.client.reddit_adapter.fetch(url)
                     image_urls = []
                     # Check if submission has a gallery
                     if hasattr(subm, "media_metadata"):
