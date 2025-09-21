@@ -6,7 +6,7 @@ on:
     - cron: '0 2 * * 1'
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -30,4 +30,4 @@ jobs:
           LOG_LEVEL: debug
         run: |
           cd ${{ github.workspace }}
-          renovate --platform=github
+          renovate --platform=github --repositories "${{ github.repository }}"
