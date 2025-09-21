@@ -22,3 +22,4 @@ jobs:
           docker-cmd-file: .github/renovate-entrypoint.sh
           docker-user: root
           token: ${{ secrets.GITHUB_TOKEN }}
+          docker-volumes: ${{ github.workspace }}:/github/workspace
