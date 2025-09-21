@@ -16,10 +16,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Run Self-Hosted Renovate
-        uses: renovatebot/github-action@v43.0.12
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          docker-cmd-file: .github/renovate-entrypoint.sh
-          docker-user: root
-          token: ${{ secrets.GITHUB_TOKEN }}
-          docker-volumes: ${{ github.workspace }}:/github/workspace
+          node-version: '20'
+
+      - name: Install Renovate
+        run: npm install -g renovate
+
+      - name: Run Renovate
+        env:
+          RENOVATE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LOG_LEVEL: debug
+        run: |
+          cd ${{ github.workspace }}
+          renovate --platform=github
