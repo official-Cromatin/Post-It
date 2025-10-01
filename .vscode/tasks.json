@@ -10,6 +10,27 @@
                 "dockerfile": "${workspaceFolder}/Dockerfile",
                 "tag": "post-it:dev"
             }
+        },
+        {
+            "label": "Run post-it (interactive, show logs)",
+            "type": "shell",
+            "dependsOn": ["Docker: Build Image"],
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-it",
+                "--name",
+                "post-it-dev",
+                "-v",
+                "${workspaceFolder}/config:/app/config",
+                "post-it:dev"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
         }
     ]
 }
