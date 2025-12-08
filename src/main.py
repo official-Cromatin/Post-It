@@ -10,7 +10,7 @@ from bot import PostIt_Bot
 from utils.datetime_tools import get_elapsed_time_milliseconds, get_elapsed_time_big
 import discord
 
-async def main(event_loop:asyncio.AbstractEventLoop, close_event:asyncio.Event):
+async def main(event_loop:asyncio.AbstractEventLoop):
     PROGRAM_VERSION = "1.0"
     print("      ____  ____  ___________    __________")
     print("     / __ \/ __ \/ ___/_  __/   /  _/_  __/")
@@ -42,7 +42,6 @@ async def main(event_loop:asyncio.AbstractEventLoop, close_event:asyncio.Event):
     def signal_handler(*args):
         app_logger.info("Shutdown signal recieved, shutting down")
         event_loop.call_soon_threadsafe(shutdown_event.set)
-        close_event.set()
 
     match sys.platform:
         case "linux":
@@ -109,17 +108,8 @@ async def main(event_loop:asyncio.AbstractEventLoop, close_event:asyncio.Event):
         quit(1)
 
     finally:
-        close_event.set()
         app_logger.info(f"Exiting. Application ran for {get_elapsed_time_big(datetime.now().timestamp() - startup_time)}")
 
 # Entry point for execution
 if __name__ == "__main__":
-    event_loop = asyncio.get_event_loop()
-    asyncio.set_event_loop(event_loop)
-    close_event = asyncio.Event()
-
-    event_loop.run_until_complete(main(event_loop, close_event))
-
-    # Wait until program is ready to close
-    event_loop.run_until_complete(close_event.wait())
-    event_loop.close()
+    asyncio.run(main(asyncio.get_event_loop()))
