@@ -49,7 +49,7 @@ async def main(event_loop:asyncio.AbstractEventLoop):
             event_loop.add_signal_handler(signal.SIGINT, signal_handler)
             event_loop.add_signal_handler(signal.SIGTERM, signal_handler)
 
-        case "darwin:":
+        case "darwin":
             app_startup_logger.info("Detected platform: MacOS (Darwin)")
             event_loop.add_signal_handler(signal.SIGINT, signal_handler)
             event_loop.add_signal_handler(signal.SIGTERM, signal_handler)
