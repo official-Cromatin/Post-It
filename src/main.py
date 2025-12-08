@@ -10,7 +10,7 @@ from bot import PostIt_Bot
 from utils.datetime_tools import get_elapsed_time_milliseconds, get_elapsed_time_big
 import discord
 
-async def main(event_loop:asyncio.AbstractEventLoop):
+async def main():
     PROGRAM_VERSION = "1.0"
     print("      ____  ____  ___________    __________")
     print("     / __ \/ __ \/ ___/_  __/   /  _/_  __/")
@@ -41,18 +41,18 @@ async def main(event_loop:asyncio.AbstractEventLoop):
     shutdown_event = asyncio.Event()
     def signal_handler(*args):
         app_logger.info("Shutdown signal recieved, shutting down")
-        event_loop.call_soon_threadsafe(shutdown_event.set)
+        shutdown_event.set()
 
     match sys.platform:
         case "linux":
             app_startup_logger.info("Detected platform: Linux")
-            event_loop.add_signal_handler(signal.SIGINT, signal_handler)
-            event_loop.add_signal_handler(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
 
         case "darwin":
             app_startup_logger.info("Detected platform: MacOS (Darwin)")
-            event_loop.add_signal_handler(signal.SIGINT, signal_handler)
-            event_loop.add_signal_handler(signal.SIGTERM, signal_handler)
+            signal.signal(signal.SIGINT, signal_handler)
+            signal.signal(signal.SIGTERM, signal_handler)
 
         case "win32":
             app_startup_logger.info("Detected platform: Windows (Win32)")
@@ -90,8 +90,8 @@ async def main(event_loop:asyncio.AbstractEventLoop):
     try:
         bot_instance = PostIt_Bot(startup_time, PROGRAM_VERSION, app_logger)
 
-        bot_task = event_loop.create_task(bot_instance.start(os.getenv("DISCORD_TOKEN")))
-        shutdown_task = event_loop.create_task(shutdown_event.wait())
+        bot_task = asyncio.create_task(bot_instance.start(os.getenv("DISCORD_TOKEN")))
+        shutdown_task = asyncio.create_task(shutdown_event.wait())
 
         # Wait if either the bot disconnects or the shutdown event is detected
         finished_task, _ = await asyncio.wait(
@@ -112,4 +112,4 @@ async def main(event_loop:asyncio.AbstractEventLoop):
 
 # Entry point for execution
 if __name__ == "__main__":
-    asyncio.run(main(asyncio.get_event_loop()))
+    asyncio.run(main())
