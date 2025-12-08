@@ -5,7 +5,7 @@ pastebin.txt
 .DS_Store
 test*.py
 docker-*
-.vscode
+.vscode/settings.json
 
 
 # Byte-compiled / optimized / DLL files
